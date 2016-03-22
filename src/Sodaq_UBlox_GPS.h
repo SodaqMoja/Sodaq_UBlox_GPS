@@ -44,26 +44,39 @@ private:
     bool readLine(uint32_t timeout = 10000);
     bool parseLine(const char * line);
     bool parseGPGGA(const String & line);
-    bool parseGPGSA(const char * line);
-    bool parseGPRMC(const char * line);
+    bool parseGPGSA(const String & line);
+    bool parseGPRMC(const String & line);
+    bool parseGPGSV(const String & line);
     bool computeCrc(const char * line, bool do_logging=false);
     uint8_t getHex2(const char * s, size_t index);
-    String getField(const String & data, char separator, int index);
+    String getField(const String & data, int index);
+    String getNumField(const String & data, int index);
+    double convertDegMinToDecDeg(const String & data);
+    String num2String(int num, size_t width);
+
     void beginTransmission();
     void endTransmission();
 
     // The (optional) stream to show debug information.
     Stream *    _diagStream;
 
-    char *      _inputBuffer;
-    size_t      _inputBufferSize;
-
     uint8_t     _addr;
 
-    bool        _gotAllMessages;
+    bool        _seenLatLon;
     uint8_t     _numSatelites;
+    double      _lat;
+    double      _lon;
+
+    bool        _seenTime;
+    uint8_t     _hh;
+    uint8_t     _mm;
+    uint8_t     _ss;
 
     bool        _trans_active;
+
+    static const char _fieldSep;
+    char *      _inputBuffer;
+    size_t      _inputBufferSize;
 };
 
 extern Sodaq_UBlox_GPS sodaq_gps;

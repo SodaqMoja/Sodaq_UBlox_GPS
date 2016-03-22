@@ -37,6 +37,7 @@ static const uint8_t UBlox_I2C_addr = 0x42;
 #define GPS_ENABLE_OFF  LOW
 
 Sodaq_UBlox_GPS sodaq_gps;
+const char Sodaq_UBlox_GPS::_fieldSep = ',';
 
 static inline bool is_timedout(uint32_t from, uint32_t nr_ms) __attribute__((always_inline));
 static inline bool is_timedout(uint32_t from, uint32_t nr_ms)
@@ -48,10 +49,18 @@ Sodaq_UBlox_GPS::Sodaq_UBlox_GPS()
 {
     _diagStream = 0;
     _addr = UBlox_I2C_addr;
-    _gotAllMessages = false;
-    _numSatelites = 0;
-    _trans_active = false;
 
+    _seenLatLon = false;
+    _numSatelites = 0;
+    _lat = 0;
+    _lon = 0;
+
+    _seenTime = false;
+    _hh = 0;
+    _mm = 0;
+    _ss = 0;
+
+    _trans_active = false;
     _inputBuffer = static_cast<char*>(malloc(INPUT_BUFFER_SIZE));
     _inputBufferSize = INPUT_BUFFER_SIZE;
 }
@@ -73,15 +82,28 @@ bool Sodaq_UBlox_GPS::scan(uint32_t timeout)
 {
     bool retval = false;
     uint32_t start = millis();
-    _gotAllMessages = false;
+    _seenLatLon = false;
+    _seenTime = false;
     _numSatelites = 0;
-    while (!is_timedout(start, timeout) && !_gotAllMessages) {
+    _lat = 0;
+    _lon = 0;
+
+    while (!is_timedout(start, timeout) && (!_seenLatLon || !_seenTime)) {
         if (!readLine()) {
             // TODO Maybe quit?
             continue;
         }
-        debugPrintLn(String(">> ") + _inputBuffer);
         parseLine(_inputBuffer);
+    }
+
+    if (_seenTime) {
+        debugPrintLn(String(" hh = ") + num2String(_hh, 2));
+        debugPrintLn(String(" mm = ") + num2String(_mm, 2));
+        debugPrintLn(String(" ss = ") + num2String(_ss, 2));
+    }
+    if (_seenLatLon) {
+        debugPrintLn(String(" lat = ") + String(_lat, 7));
+        debugPrintLn(String(" lon = ") + String(_lon, 7));
     }
     return retval;
 }
@@ -90,23 +112,31 @@ bool Sodaq_UBlox_GPS::parseLine(const char * line)
 {
     const char * typ;
 
+    //debugPrintLn(String("= ") + line);
     if (!computeCrc(line, false)) {
         // Redo the check, with logging
         computeCrc(line, true);
         return false;
     }
-    typ = "$GPGGA";
-    if (strncmp(line, typ, strlen(typ)) == 0) {
-        return parseGPGGA(line);
+    String data = line + 1;
+    data.remove(data.length() - 3, 3);  // Strip checksum *<hex><hex>
+
+    if (data.startsWith("GPGGA")) {
+        return parseGPGGA(data);
     }
-    typ = "$GPGSA";
-    if (strncmp(line, typ, strlen(typ)) == 0) {
-        return parseGPGSA(line);
+
+    if (data.startsWith("GPGSA")) {
+        return parseGPGSA(data);
     }
-    typ = "$GPRMC";
-    if (strncmp(line, typ, strlen(typ)) == 0) {
-        return parseGPRMC(line);
+
+    if (data.startsWith("GPRMC")) {
+        return parseGPRMC(data);
     }
+
+    if (data.startsWith("GPGSV")) {
+        return parseGPGSV(data);
+    }
+    debugPrintLn(String("?? >> ") + line);
     return false;
 }
 
@@ -120,61 +150,58 @@ bool Sodaq_UBlox_GPS::parseLine(const char * line)
  * current Fix data, the RMC which provides the minimum gps sentences
  * information, and the GSA which provides the Satellite status data.
  *
- * GGA - essential fix data which provide 3D location and accuracy data.
- *  $GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47
- * Where:
-     GGA          Global Positioning System Fix Data
-     123519       Fix taken at 12:35:19 UTC
-     4807.038,N   Latitude 48 deg 07.038' N
-     01131.000,E  Longitude 11 deg 31.000' E
-     1            Fix quality: 0 = invalid
-                               1 = GPS fix (SPS)
-                               2 = DGPS fix
-                               3 = PPS fix
-                               4 = Real Time Kinematic
-                               5 = Float RTK
-                               6 = estimated (dead reckoning) (2.3 feature)
-                               7 = Manual input mode
-                               8 = Simulation mode
-     08           Number of satellites being tracked
-     0.9          Horizontal dilution of position
-     545.4,M      Altitude, Meters, above mean sea level
-     46.9,M       Height of geoid (mean sea level) above WGS84
-                      ellipsoid
-     (empty field) time in seconds since last DGPS update
-     (empty field) DGPS station ID number
-     *47          the checksum data, always begins with *
-
- * If the height of geoid is missing then the altitude should be suspect. Some
- * non-standard implementations report altitude with respect to the ellipsoid
- * rather than geoid altitude. Some units do not report negative altitudes at
- * all. This is the only sentence that reports altitude.
+ * 0    $GPGGA
+ * 1    time            hhmmss.ss       UTC time
+ * 2    lat             ddmm.mmmmm      Latitude (degrees & minutes)
+ * 3    NS              char            North/South indicator
+ * 4    long            dddmm.mmmmm     Longitude (degrees & minutes)
+ * 5    EW              char            East/West indicator
+ * 6    quality         digit           Quality indicator for position fix: 0 No Fix, 6 Estimated, 1 Auto GNSS, 2 Diff GNSS
+ * 7    numSV           num             Number of satellites used
+ * 8    HDOP            num             Horizontal Dilution of Precision
+ * 9    alt             num             Altitude above mean sea level
+ * 10   uAlt            char            Altitude units: meters
+ * 11   sep             num             Geoid separation: difference between geoid and mean sea level
+ * 12   uSep            char            Separation units: meters
+ * 13   diffAge         num             Age of differential corrections
+ * 14   diffStation     num             ID of station providing differential corrections
+ * 15   checksum        2 hex digits
  */
 bool Sodaq_UBlox_GPS::parseGPGGA(const String & line)
 {
     debugPrintLn("parseGPGGA");
-    for (size_t fld = 0; fld < 11; ++fld) {
-        debugPrintLn(String("fld ") + fld + " \"" + getField(line, ',', fld) + "\"");
+    debugPrintLn(String(">> ") + line);
+    if (getField(line, 6) != "0") {
+        _lat = convertDegMinToDecDeg(getField(line, 2));
+        if (getField(line, 3) == "S") {
+            _lat = -_lat;
+        }
+        _lon = convertDegMinToDecDeg(getField(line, 4));
+        if (getField(line, 5) == "W") {
+            _lon = -_lon;
+        }
+        _seenLatLon = true;
     }
 
-    // Time HHMMSS
-    (uint32_t)getField(line, ',', 1).toFloat();
-
-    // Check GPS Quality
-    if (getField(line, ',', 6) != "0") {
-        // Not worth looking any further ??
-        // return false;
+    String time = getField(line, 1);
+    if (time.length() == 9) {
+        _hh = time.substring(0, 2).toInt();
+        _mm = time.substring(2, 4).toInt();
+        _ss = time.substring(4, 6).toInt();
+        _seenTime = true;
     }
-    _numSatelites = getField(line, ',', 7).toInt();
+
+    _numSatelites = getField(line, 7).toInt();
     return true;
 }
 
 /*!
  * Parse GPGSA line
  */
-bool Sodaq_UBlox_GPS::parseGPGSA(const char * line)
+bool Sodaq_UBlox_GPS::parseGPGSA(const String & line)
 {
     debugPrintLn("parseGPGSA");
+    debugPrintLn(String(">> ") + line);
     return false;
 }
 
@@ -184,7 +211,7 @@ bool Sodaq_UBlox_GPS::parseGPGSA(const char * line)
  *
  * 0    $GPRMC
  * 1    time            hhmmss.ss       UTC time
- * 2    status          char            Status
+ * 2    status          char            Status, V = Navigation receiver warning, A = Data valid
  * 3    lat             ddmm.mmmmm      Latitude (degrees & minutes)
  * 4    NS              char            North/South
  * 5    long            dddmm.mmmmm     Longitude (degrees & minutes)
@@ -194,15 +221,53 @@ bool Sodaq_UBlox_GPS::parseGPGSA(const char * line)
  * 9    date            ddmmyy          Date in day, month, year format
  * 10   mv              num             Magnetic variation value
  * 11   mvEW            char            Magnetic variation E/W indicator
- * 12   posMode         char            Mode Indicator
- * 13   checksum
+ * 12   posMode         char            Mode Indicator: 'N' No Fix, 'E' Estimate, 'A' Auto GNSS, 'D' Diff GNSS
+ * 13   checksum        2 hex digits    Checksum
  */
-bool Sodaq_UBlox_GPS::parseGPRMC(const char * line)
+bool Sodaq_UBlox_GPS::parseGPRMC(const String & line)
 {
     debugPrintLn("parseGPRMC");
+    debugPrintLn(String(">> ") + line);
+
+    if (getField(line, 2) == "A" && getField(line, 12) != "N") {
+        _lat = convertDegMinToDecDeg(getField(line, 3));
+        if (getField(line, 4) == "S") {
+            _lat = -_lat;
+        }
+        _lon = convertDegMinToDecDeg(getField(line, 5));
+        if (getField(line, 4) == "W") {
+            _lon = -_lon;
+        }
+        _seenLatLon = true;
+    }
+
+    String time = getField(line, 1);
+    if (time.length() == 9) {
+        _hh = time.substring(0, 2).toInt();
+        _mm = time.substring(2, 4).toInt();
+        _ss = time.substring(4, 6).toInt();
+        _seenTime = true;
+    }
+
     return false;
 }
 
+/*!
+ * Parse GPGSV line
+ */
+bool Sodaq_UBlox_GPS::parseGPGSV(const String & line)
+{
+    debugPrintLn("parseGPGSV");
+    debugPrintLn(String(">> ") + line);
+    return false;
+}
+
+/*!
+ * Compute and verify the checksum
+ *
+ * Each line must start with '$'
+ * Each line must end with '*' <hex> <hex>
+ */
 bool Sodaq_UBlox_GPS::computeCrc(const char * line, bool do_logging)
 {
     if (do_logging) {
@@ -273,14 +338,24 @@ uint8_t Sodaq_UBlox_GPS::getHex2(const char * s, size_t index)
     return val;
 }
 
-String Sodaq_UBlox_GPS::getField(const String & data, char separator, int index)
+String Sodaq_UBlox_GPS::num2String(int num, size_t width)
+{
+    String out;
+    out = num;
+    while (out.length() < width) {
+        out = String("0") + out;
+    }
+    return out;
+}
+
+String Sodaq_UBlox_GPS::getField(const String & data, int index)
 {
     int found = 0;
     int strIndex[] = { 0, -1 };
     int maxIndex = data.length() - 1;
 
     for (int i = 0; i <= maxIndex && found <= index; i++) {
-        if (data.charAt(i) == separator || i == maxIndex) {
+        if (data.charAt(i) == _fieldSep || i == maxIndex) {
             found++;
             strIndex[0] = strIndex[1] + 1;
             strIndex[1] = (i == maxIndex) ? i + 1 : i;
@@ -288,6 +363,41 @@ String Sodaq_UBlox_GPS::getField(const String & data, char separator, int index)
     }
 
     return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
+}
+
+/*
+ * Convert lat/long degree-minute format to decimal-degrees
+ *
+ * This code is from
+ *   http://arduinodev.woofex.net/2013/02/06/adafruit_gps_forma/
+ *
+ * According to the NMEA Standard, Latitude and Longitude are output in the format Degrees, Minutes and
+ * (Decimal) Fractions of Minutes. To convert to Degrees and Fractions of Degrees, or Degrees, Minutes, Seconds
+ * and Fractions of seconds, the 'Minutes' and 'Fractional Minutes' parts need to be converted. In other words: If
+ * the GPS Receiver reports a Latitude of 4717.112671 North and Longitude of 00833.914843 East, this is
+ *   Latitude 47 Degrees, 17.112671 Minutes
+ *   Longitude 8 Degrees, 33.914843 Minutes
+ * or
+ *   Latitude 47 Degrees, 17 Minutes, 6.76026 Seconds
+ *   Longitude 8 Degrees, 33 Minutes, 54.89058 Seconds
+ * or
+ *   Latitude 47.28521118 Degrees
+ *   Longitude 8.56524738 Degrees
+ */
+double Sodaq_UBlox_GPS::convertDegMinToDecDeg(const String & data)
+{
+    double degMin = data.toFloat();
+    double min = 0.0;
+    double decDeg = 0.0;
+
+    //get the minutes, fmod() requires double
+    min = fmod((double) degMin, 100.0);
+
+    //rebuild coordinates in decimal degrees
+    degMin = (int) (degMin / 100);
+    decDeg = degMin + (min / 60);
+
+    return decDeg;
 }
 
 /*!
