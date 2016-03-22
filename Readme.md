@@ -7,7 +7,33 @@ Arduino library for using the UBlox EVA7M.
 Quick example:
 
 ```c
-#include "Sodaq_UBlox_GPS.h"
+#include <Arduino.h>
+#include <Sodaq_UBlox_GPS.h>
+
+#define MySerial        SERIAL_PORT_MONITOR
+
+void setup()
+{
+    delay(3000);
+    while (!SerialUSB) {
+        // Wait for USB to connect
+    }
+
+    MySerial.begin(57600);
+    do_flash_led(LED_BLUE);
+
+    MySerial.println("SODAQ LoRaONE test_gps is starting ...");
+
+    sodaq_gps.init();
+    sodaq_gps.setDiag(MySerial);
+}
+
+void loop()
+{
+    sodaq_gps.scan();
+    MySerial.println("waiting in loop() ...");
+    delay(60000);
+}
 
 ```
 
