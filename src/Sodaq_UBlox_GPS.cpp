@@ -70,15 +70,13 @@ void Sodaq_UBlox_GPS::init()
     Wire.begin();
     digitalWrite(GPS_ENABLE, GPS_ENABLE_OFF);
     pinMode(GPS_ENABLE, OUTPUT);
-
-    on();
-    delay(500);         // TODO Is this needed?
 }
 
 /*!
- *
+ * Read the UBlox device until a fix is seen, or until
+ * a timeout has been reached.
  */
-bool Sodaq_UBlox_GPS::scan(uint32_t timeout)
+bool Sodaq_UBlox_GPS::scan(bool leave_on, uint32_t timeout)
 {
     bool retval = false;
     uint32_t start = millis();
@@ -87,6 +85,9 @@ bool Sodaq_UBlox_GPS::scan(uint32_t timeout)
     _numSatelites = 0;
     _lat = 0;
     _lon = 0;
+
+    on();
+    delay(500);         // TODO Is this needed?
 
     while (!is_timedout(start, timeout) && (!_seenLatLon || !_seenTime)) {
         if (!readLine()) {
@@ -105,13 +106,24 @@ bool Sodaq_UBlox_GPS::scan(uint32_t timeout)
         debugPrintLn(String(" lat = ") + String(_lat, 7));
         debugPrintLn(String(" lon = ") + String(_lon, 7));
     }
+
+    if (_seenLatLon && _seenTime) {
+        retval = true;
+    }
+
+    if (!leave_on) {
+        off();
+    }
     return retval;
+}
+
+String Sodaq_UBlox_GPS::getTimeString()
+{
+    return num2String(_hh, 2) + num2String(_mm, 2) + num2String(_ss, 2);
 }
 
 bool Sodaq_UBlox_GPS::parseLine(const char * line)
 {
-    const char * typ;
-
     //debugPrintLn(String("= ") + line);
     if (!computeCrc(line, false)) {
         // Redo the check, with logging
@@ -136,6 +148,7 @@ bool Sodaq_UBlox_GPS::parseLine(const char * line)
     if (data.startsWith("GPGSV")) {
         return parseGPGSV(data);
     }
+
     debugPrintLn(String("?? >> ") + line);
     return false;
 }

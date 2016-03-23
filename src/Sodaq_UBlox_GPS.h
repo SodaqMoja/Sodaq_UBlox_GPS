@@ -29,7 +29,10 @@ public:
     Sodaq_UBlox_GPS();
 
     void init();
-    bool scan(uint32_t timeout=20000);
+    bool scan(bool leave_on=false, uint32_t timeout=20000);
+    String getTimeString();
+    double getLat() { return _lat; }
+    double getLon() { return _lon; }
 
     // Sets the optional "Diagnostics and Debug" stream.
     void setDiag(Stream &stream) { _diagStream = &stream; }
