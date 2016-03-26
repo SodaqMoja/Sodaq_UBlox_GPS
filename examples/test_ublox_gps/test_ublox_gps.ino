@@ -32,9 +32,19 @@ void setup()
 
 void loop()
 {
-    sodaq_gps.scan();
-    MySerial.println("waiting in loop() ...");
-    delay(60000);
+    uint32_t start = millis();
+    MySerial.println("waiting for fix ...");
+    if (sodaq_gps.scan(false, 120000)) {
+        MySerial.println(String(" fix took: ") + (millis() - start) + String("ms"));
+        MySerial.println(String(" hhmmss = ") + sodaq_gps.getTimeString());
+        MySerial.println(String(" lat = ") + String(sodaq_gps.getLat(), 7));
+        MySerial.println(String(" lon = ") + String(sodaq_gps.getLon(), 7));
+    } else {
+        MySerial.println("No Fix");
+    }
+    uint32_t wait_ms = 60000;
+    MySerial.println(String("delay ...") + wait_ms + String("ms"));
+    delay(wait_ms);
 }
 
 void do_flash_led(int pin)
