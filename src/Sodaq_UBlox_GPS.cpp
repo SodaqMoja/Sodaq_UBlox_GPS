@@ -98,13 +98,11 @@ bool Sodaq_UBlox_GPS::scan(bool leave_on, uint32_t timeout)
     }
 
     if (_seenTime) {
-        debugPrintLn(String(" hh = ") + num2String(_hh, 2));
-        debugPrintLn(String(" mm = ") + num2String(_mm, 2));
-        debugPrintLn(String(" ss = ") + num2String(_ss, 2));
+        debugPrintLn(String("[scan] hhmmss = ") + getTimeString());
     }
     if (_seenLatLon) {
-        debugPrintLn(String(" lat = ") + String(_lat, 7));
-        debugPrintLn(String(" lon = ") + String(_lon, 7));
+        debugPrintLn(String("[scan] lat = ") + String(_lat, 7));
+        debugPrintLn(String("[scan] lon = ") + String(_lon, 7));
     }
 
     if (_seenLatLon && _seenTime) {
@@ -147,6 +145,18 @@ bool Sodaq_UBlox_GPS::parseLine(const char * line)
 
     if (data.startsWith("GPGSV")) {
         return parseGPGSV(data);
+    }
+
+    if (data.startsWith("GPGLL")) {
+        return parseGPGLL(data);
+    }
+
+    if (data.startsWith("GPVTG")) {
+        return parseGPVTG(data);
+    }
+
+    if (data.startsWith("GPTXT")) {
+        return parseGPTXT(data);
     }
 
     debugPrintLn(String("?? >> ") + line);
@@ -273,6 +283,48 @@ bool Sodaq_UBlox_GPS::parseGPGSV(const String & line)
     debugPrintLn("parseGPGSV");
     debugPrintLn(String(">> ") + line);
     return false;
+}
+
+/*!
+ * Parse GPGLL line
+ */
+bool Sodaq_UBlox_GPS::parseGPGLL(const String & line)
+{
+    debugPrintLn("parseGPGLL");
+    debugPrintLn(String(">> ") + line);
+    return false;
+}
+
+/*!
+ * Parse GPVTG line
+ */
+bool Sodaq_UBlox_GPS::parseGPVTG(const String & line)
+{
+    debugPrintLn("parseGPVTG");
+    debugPrintLn(String(">> ") + line);
+    return false;
+}
+
+/*!
+ * Parse GPTXT line
+ * See also section 24.13 of u-blox 7, Receiver Description. Document number: GPS.G7-SW-12001-B
+ *   $GPTXT,01,01,02,ANTSTATUS=INIT*25
+ *   ...
+ *   $GPTXT,01,01,02,ANTSTATUS=OK*3B
+ *
+ * 0    $GPTXT
+ * 1    numMsg          num             Total number of messages in this transmission
+ * 2    msgNum          num             Message number in this transmission
+ * 3    msgType         num             Text identifier, 00: Error, 01: Warning, 02: Notice, 07: User
+ * 4    text            string          Any ASCII text
+ * 13   checksum        2 hex digits    Checksum
+ */
+bool Sodaq_UBlox_GPS::parseGPTXT(const String & line)
+{
+    //debugPrintLn("parseGPTXT");
+    //debugPrintLn(String(">> ") + line);
+    debugPrintLn(String("TXT: \"") + getField(line, 4) + "\"");
+    return true;
 }
 
 /*!

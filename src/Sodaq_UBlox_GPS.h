@@ -50,6 +50,9 @@ private:
     bool parseGPGSA(const String & line);
     bool parseGPRMC(const String & line);
     bool parseGPGSV(const String & line);
+    bool parseGPGLL(const String & line);
+    bool parseGPVTG(const String & line);
+    bool parseGPTXT(const String & line);
     bool computeCrc(const char * line, bool do_logging=false);
     uint8_t getHex2(const char * s, size_t index);
     String getField(const String & data, int index);
