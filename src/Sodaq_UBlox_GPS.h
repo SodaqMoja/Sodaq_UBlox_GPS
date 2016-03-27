@@ -41,7 +41,11 @@ public:
     uint8_t getMinute();        // 0..
     uint8_t getSecond();        // 0..
 
-    void setNumFixScans(size_t num) { _numFixScans = num; }
+    // How many extra lines must scan see before it stops? This is merely for debugging
+    void setMinNumOfLines(size_t num) { _minNumOfLines = num; }
+
+    // The minimum number of satellites to satisfy scan
+    void setMinNumSatellites(size_t num) { _minNumSatellites = num; }
 
     // Sets the optional "Diagnostics and Debug" stream.
     void setDiag(Stream &stream) { _diagStream = &stream; }
@@ -80,8 +84,7 @@ private:
 
     uint8_t     _addr;
 
-    // How often must a fix be seen by scan()?
-    size_t      _numFixScans;
+    size_t      _minNumOfLines;
 
     // Minimum number of satellites to satisfy scan(). Zero means any number is OK.
     size_t      _minNumSatellites;

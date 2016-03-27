@@ -50,7 +50,7 @@ Sodaq_UBlox_GPS::Sodaq_UBlox_GPS()
     _diagStream = 0;
     _addr = UBlox_I2C_addr;
 
-    _numFixScans = 0;
+    _minNumOfLines = 0;
     _minNumSatellites = 0;
 
     resetValues();
@@ -109,7 +109,7 @@ bool Sodaq_UBlox_GPS::scan(bool leave_on, uint32_t timeout)
                 && _seenTime
                 && (_minNumSatellites == 0 || _numSatellites >= _minNumSatellites)) {
             ++fix_count;
-            if (fix_count >= _numFixScans) {
+            if (fix_count >= _minNumOfLines) {
                 retval = true;
                 break;
             }
