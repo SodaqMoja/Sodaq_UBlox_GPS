@@ -5,7 +5,7 @@
 #define ARRAY_DIM(arr)  (sizeof(arr) / sizeof(arr[0]))
 
 // List of interval values to be used in loop()
-// to measure how long it takes to find a fix.
+// to measure how long it takes to get a fix.
 uint32_t intervals[] = {
         1UL * 60 * 1000,
         5UL * 60 * 1000,
@@ -43,6 +43,7 @@ void setup()
     MySerial.println("SODAQ LoRaONE test_gps is starting ...");
 
     sodaq_gps.init();
+    // Uncomment the next line if you want to see the incoming $GPxxx messages
     // sodaq_gps.setDiag(MySerial);
 }
 
@@ -51,12 +52,13 @@ void loop()
     uint32_t start = millis();
 
     uint32_t timeout = 900L * 1000;
-    MySerial.println("waiting for fix ...");
+    MySerial.println(String("waiting for fix ..., timeout=") + timeout + String("ms"));
     if (sodaq_gps.scan(false, timeout)) {
         MySerial.println(String(" fix took: ") + (millis() - start) + String("ms"));
-        MySerial.println(String(" hhmmss = ") + sodaq_gps.getTimeString());
+        MySerial.println(String(" datetime = ") + sodaq_gps.getDateTimeString());
         MySerial.println(String(" lat = ") + String(sodaq_gps.getLat(), 7));
         MySerial.println(String(" lon = ") + String(sodaq_gps.getLon(), 7));
+        MySerial.println(String(" num sats = ") + String(sodaq_gps.getNumberOfSatellites()));
     } else {
         MySerial.println("No Fix");
     }
