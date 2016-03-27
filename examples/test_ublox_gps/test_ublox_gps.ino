@@ -46,10 +46,10 @@ void setup()
 
     // This is for debugging to see more details, more messages
     // Use this in combination with setDiag()
-    sodaq_gps.setMinNumOfLines(10);
+    // sodaq_gps.setMinNumOfLines(10);
 
     // Uncomment the next line if you want to see the incoming $GPxxx messages
-    sodaq_gps.setDiag(MySerial);
+    // sodaq_gps.setDiag(MySerial);
 }
 
 void loop()
