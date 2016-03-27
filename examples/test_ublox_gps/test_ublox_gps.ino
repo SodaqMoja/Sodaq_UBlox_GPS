@@ -2,6 +2,22 @@
 #include <Sodaq_UBlox_GPS.h>
 
 #define MySerial        SERIAL_PORT_MONITOR
+#define ARRAY_DIM(arr)  (sizeof(arr) / sizeof(arr[0]))
+
+// List of interval values to be used in loop()
+// to measure how long it takes to find a fix.
+uint32_t intervals[] = {
+        1UL * 60 * 1000,
+        5UL * 60 * 1000,
+        15UL * 60 * 1000,
+        30UL * 60 * 1000,
+        1UL * 60 * 60 * 1000,
+        3UL * 60 * 60 * 1000,
+        4UL * 60 * 60 * 1000,
+        8UL * 60 * 60 * 1000,
+};
+size_t interval_ix = 0;
+
 void do_flash_led(int pin);
 
 void setup()
@@ -27,14 +43,16 @@ void setup()
     MySerial.println("SODAQ LoRaONE test_gps is starting ...");
 
     sodaq_gps.init();
-    sodaq_gps.setDiag(MySerial);
+    // sodaq_gps.setDiag(MySerial);
 }
 
 void loop()
 {
     uint32_t start = millis();
+
+    uint32_t timeout = 900L * 1000;
     MySerial.println("waiting for fix ...");
-    if (sodaq_gps.scan(false, 120000)) {
+    if (sodaq_gps.scan(false, timeout)) {
         MySerial.println(String(" fix took: ") + (millis() - start) + String("ms"));
         MySerial.println(String(" hhmmss = ") + sodaq_gps.getTimeString());
         MySerial.println(String(" lat = ") + String(sodaq_gps.getLat(), 7));
@@ -42,7 +60,10 @@ void loop()
     } else {
         MySerial.println("No Fix");
     }
-    uint32_t wait_ms = 60000;
+    uint32_t wait_ms = intervals[interval_ix];
+    if (++interval_ix > ARRAY_DIM(intervals)) {
+        interval_ix = 0;
+    }
     MySerial.println(String("delay ...") + wait_ms + String("ms"));
     delay(wait_ms);
 }
