@@ -50,8 +50,20 @@ Sodaq_UBlox_GPS::Sodaq_UBlox_GPS()
     _diagStream = 0;
     _addr = UBlox_I2C_addr;
 
+    _numFixScans = 0;
+    _minNumSatellites = 0;
+
+    resetValues();
+
+    _trans_active = false;
+    _inputBuffer = static_cast<char*>(malloc(INPUT_BUFFER_SIZE));
+    _inputBufferSize = INPUT_BUFFER_SIZE;
+}
+
+void Sodaq_UBlox_GPS::resetValues()
+{
     _seenLatLon = false;
-    _numSatelites = 0;
+    _numSatellites = 0;
     _lat = 0;
     _lon = 0;
 
@@ -59,10 +71,9 @@ Sodaq_UBlox_GPS::Sodaq_UBlox_GPS()
     _hh = 0;
     _mm = 0;
     _ss = 0;
-
-    _trans_active = false;
-    _inputBuffer = static_cast<char*>(malloc(INPUT_BUFFER_SIZE));
-    _inputBufferSize = INPUT_BUFFER_SIZE;
+    _yy = 0;
+    _MM = 0;
+    _dd = 0;
 }
 
 void Sodaq_UBlox_GPS::init()
@@ -80,33 +91,40 @@ bool Sodaq_UBlox_GPS::scan(bool leave_on, uint32_t timeout)
 {
     bool retval = false;
     uint32_t start = millis();
-    _seenLatLon = false;
-    _seenTime = false;
-    _numSatelites = 0;
-    _lat = 0;
-    _lon = 0;
+    resetValues();
 
     on();
     delay(500);         // TODO Is this needed?
 
-    while (!is_timedout(start, timeout) && (!_seenLatLon || !_seenTime)) {
+    size_t fix_count = 0;
+    while (!is_timedout(start, timeout)) {
         if (!readLine()) {
             // TODO Maybe quit?
             continue;
         }
         parseLine(_inputBuffer);
+
+        // Which conditions are required to quit the scan?
+        if (_seenLatLon
+                && _seenTime
+                && (_minNumSatellites == 0 || _numSatellites >= _minNumSatellites)) {
+            ++fix_count;
+            if (fix_count >= _numFixScans) {
+                retval = true;
+                break;
+            }
+        }
     }
 
+    if (_numSatellites > 0) {
+        debugPrintLn(String("[scan] num sats = ") + _numSatellites);
+    }
     if (_seenTime) {
-        debugPrintLn(String("[scan] hhmmss = ") + getTimeString());
+        debugPrintLn(String("[scan] datetime = ") + getDateTimeString());
     }
     if (_seenLatLon) {
         debugPrintLn(String("[scan] lat = ") + String(_lat, 7));
         debugPrintLn(String("[scan] lon = ") + String(_lon, 7));
-    }
-
-    if (_seenLatLon && _seenTime) {
-        retval = true;
     }
 
     if (!leave_on) {
@@ -115,9 +133,14 @@ bool Sodaq_UBlox_GPS::scan(bool leave_on, uint32_t timeout)
     return retval;
 }
 
-String Sodaq_UBlox_GPS::getTimeString()
+String Sodaq_UBlox_GPS::getDateTimeString()
 {
-    return num2String(_hh, 2) + num2String(_mm, 2) + num2String(_ss, 2);
+    return num2String(_yy, 2)
+            + num2String(_MM, 2)
+            + num2String(_dd, 2)
+            + num2String(_hh, 2)
+            + num2String(_mm, 2)
+            + num2String(_ss, 2);
 }
 
 bool Sodaq_UBlox_GPS::parseLine(const char * line)
@@ -206,23 +229,17 @@ bool Sodaq_UBlox_GPS::parseGPGGA(const String & line)
         _seenLatLon = true;
     }
 
-    String time = getField(line, 1);
-    if (time.length() == 9) {
-        _hh = time.substring(0, 2).toInt();
-        _mm = time.substring(2, 4).toInt();
-        _ss = time.substring(4, 6).toInt();
-        _seenTime = true;
-    }
-
-    _numSatelites = getField(line, 7).toInt();
+    _numSatellites = getField(line, 7).toInt();
     return true;
 }
 
 /*!
  * Parse GPGSA line
+ * GNSS DOP and Active Satellites
  */
 bool Sodaq_UBlox_GPS::parseGPGSA(const String & line)
 {
+    // Not (yet) used
     debugPrintLn("parseGPGSA");
     debugPrintLn(String(">> ") + line);
     return false;
@@ -265,31 +282,47 @@ bool Sodaq_UBlox_GPS::parseGPRMC(const String & line)
     }
 
     String time = getField(line, 1);
-    if (time.length() == 9) {
-        _hh = time.substring(0, 2).toInt();
-        _mm = time.substring(2, 4).toInt();
-        _ss = time.substring(4, 6).toInt();
-        _seenTime = true;
-    }
+    String date = getField(line, 9);
+    setDateTime(date, time);
 
-    return false;
+    return true;
 }
 
 /*!
  * Parse GPGSV line
+ * See also section 24.12 of u-blox 7, Receiver Description. Document number: GPS.G7-SW-12001-B
+ *
+ * 0    $GPGSV
+ * 1    numMsg          digit   Number of messages, total number of GSV messages being output
+ * 2    msgNum          digit   Number of this message
+ * 3    numSV           num     Number of satellites in view
+ *
+ * 4    sv              num     Satellite ID
+ * 5    elv             num     Elevation (range 0-90)
+ * 6    az              num     Azimuth, (range 0-359)
+ * 7    cno             num     Signal strength (C/N0, range 0-99), blank when not tracking
+ *
+ * fields 4..7 are repeated for each satellite in this message
  */
 bool Sodaq_UBlox_GPS::parseGPGSV(const String & line)
 {
     debugPrintLn("parseGPGSV");
     debugPrintLn(String(">> ") + line);
-    return false;
+
+    // We could/should only use msgNum == 1. However, all messages should have
+    // the same numSV.
+    _numSatellites = getField(line, 3).toInt();
+
+    return true;
 }
 
 /*!
  * Parse GPGLL line
+ * Latitude and longitude, with time of position fix and status
  */
 bool Sodaq_UBlox_GPS::parseGPGLL(const String & line)
 {
+    // Not (yet) used
     debugPrintLn("parseGPGLL");
     debugPrintLn(String(">> ") + line);
     return false;
@@ -297,9 +330,11 @@ bool Sodaq_UBlox_GPS::parseGPGLL(const String & line)
 
 /*!
  * Parse GPVTG line
+ * Course over ground and Ground speed
  */
 bool Sodaq_UBlox_GPS::parseGPVTG(const String & line)
 {
+    // Not (yet) used
     debugPrintLn("parseGPVTG");
     debugPrintLn(String(">> ") + line);
     return false;
@@ -463,6 +498,19 @@ double Sodaq_UBlox_GPS::convertDegMinToDecDeg(const String & data)
     decDeg = degMin + (min / 60);
 
     return decDeg;
+}
+
+void Sodaq_UBlox_GPS::setDateTime(const String & date, const String & time)
+{
+    if (time.length() == 9 && date.length() == 6) {
+        _hh = time.substring(0, 2).toInt();
+        _mm = time.substring(2, 4).toInt();
+        _ss = time.substring(4, 6).toInt();
+        _yy = date.substring(0, 2).toInt() + 2000;
+        _MM = date.substring(2, 4).toInt();
+        _dd = date.substring(4, 6).toInt();
+        _seenTime = true;
+    }
 }
 
 /*!

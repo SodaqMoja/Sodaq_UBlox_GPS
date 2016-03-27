@@ -30,9 +30,18 @@ public:
 
     void init();
     bool scan(bool leave_on=false, uint32_t timeout=20000);
-    String getTimeString();
+    String getDateTimeString();
     double getLat() { return _lat; }
     double getLon() { return _lon; }
+    uint8_t getNumberOfSatellites() { return _numSatellites; }
+    uint16_t getYear();         // 2016..
+    uint8_t getMonth();         // 1..
+    uint8_t getDay();           // 1..
+    uint8_t getHour();          // 0..
+    uint8_t getMinute();        // 0..
+    uint8_t getSecond();        // 0..
+
+    void setNumFixScans(size_t num) { _numFixScans = num; }
 
     // Sets the optional "Diagnostics and Debug" stream.
     void setDiag(Stream &stream) { _diagStream = &stream; }
@@ -55,25 +64,37 @@ private:
     bool parseGPTXT(const String & line);
     bool computeCrc(const char * line, bool do_logging=false);
     uint8_t getHex2(const char * s, size_t index);
-    String getField(const String & data, int index);
-    String getNumField(const String & data, int index);
-    double convertDegMinToDecDeg(const String & data);
     String num2String(int num, size_t width);
+    String getField(const String & data, int index);
+    double convertDegMinToDecDeg(const String & data);
+
+    void setDateTime(const String & date, const String & time);
 
     void beginTransmission();
     void endTransmission();
+
+    void resetValues();
 
     // The (optional) stream to show debug information.
     Stream *    _diagStream;
 
     uint8_t     _addr;
 
+    // How often must a fix be seen by scan()?
+    size_t      _numFixScans;
+
+    // Minimum number of satellites to satisfy scan(). Zero means any number is OK.
+    size_t      _minNumSatellites;
+
     bool        _seenLatLon;
-    uint8_t     _numSatelites;
+    uint8_t     _numSatellites;
     double      _lat;
     double      _lon;
 
     bool        _seenTime;
+    uint8_t     _yy;
+    uint8_t     _MM;
+    uint8_t     _dd;
     uint8_t     _hh;
     uint8_t     _mm;
     uint8_t     _ss;
