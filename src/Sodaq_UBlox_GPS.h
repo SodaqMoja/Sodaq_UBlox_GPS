@@ -39,7 +39,7 @@ public:
     uint8_t getDay() { return _dd; }           // 1..
     uint8_t getHour() { return _hh; }          // 0..
     uint8_t getMinute() { return _mm; }        // 0..
-    uint8_t getSecond() { return _dd; }        // 0..
+    uint8_t getSecond() { return _ss; }        // 0..
 
     // How many extra lines must scan see before it stops? This is merely for debugging
     void setMinNumOfLines(size_t num) { _minNumOfLines = num; }
