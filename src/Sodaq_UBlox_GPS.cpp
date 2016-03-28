@@ -135,12 +135,12 @@ bool Sodaq_UBlox_GPS::scan(bool leave_on, uint32_t timeout)
 
 String Sodaq_UBlox_GPS::getDateTimeString()
 {
-    return num2String(_yy, 2)
-            + num2String(_MM, 2)
-            + num2String(_dd, 2)
-            + num2String(_hh, 2)
-            + num2String(_mm, 2)
-            + num2String(_ss, 2);
+    return num2String(getYear(), 4)
+            + num2String(getMonth(), 2)
+            + num2String(getDay(), 2)
+            + num2String(getHour(), 2)
+            + num2String(getMinute(), 2)
+            + num2String(getSecond(), 2);
 }
 
 bool Sodaq_UBlox_GPS::parseLine(const char * line)
@@ -508,7 +508,7 @@ void Sodaq_UBlox_GPS::setDateTime(const String & date, const String & time)
         _ss = time.substring(4, 6).toInt();
         _dd = date.substring(0, 2).toInt();
         _MM = date.substring(2, 4).toInt();
-        _yy = date.substring(4, 6).toInt() + 2000;
+        _yy = date.substring(4, 6).toInt();
         _seenTime = true;
     }
 }

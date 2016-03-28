@@ -34,12 +34,12 @@ public:
     double getLat() { return _lat; }
     double getLon() { return _lon; }
     uint8_t getNumberOfSatellites() { return _numSatellites; }
-    uint16_t getYear();         // 2016..
-    uint8_t getMonth();         // 1..
-    uint8_t getDay();           // 1..
-    uint8_t getHour();          // 0..
-    uint8_t getMinute();        // 0..
-    uint8_t getSecond();        // 0..
+    uint16_t getYear() { return (uint16_t)_yy + 2000; }         // 2016..
+    uint8_t getMonth() { return _MM; }         // 1..
+    uint8_t getDay() { return _dd; }           // 1..
+    uint8_t getHour() { return _hh; }          // 0..
+    uint8_t getMinute() { return _mm; }        // 0..
+    uint8_t getSecond() { return _dd; }        // 0..
 
     // How many extra lines must scan see before it stops? This is merely for debugging
     void setMinNumOfLines(size_t num) { _minNumOfLines = num; }
