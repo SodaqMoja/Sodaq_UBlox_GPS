@@ -506,9 +506,9 @@ void Sodaq_UBlox_GPS::setDateTime(const String & date, const String & time)
         _hh = time.substring(0, 2).toInt();
         _mm = time.substring(2, 4).toInt();
         _ss = time.substring(4, 6).toInt();
-        _yy = date.substring(0, 2).toInt() + 2000;
+        _dd = date.substring(0, 2).toInt();
         _MM = date.substring(2, 4).toInt();
-        _dd = date.substring(4, 6).toInt();
+        _yy = date.substring(4, 6).toInt() + 2000;
         _seenTime = true;
     }
 }
