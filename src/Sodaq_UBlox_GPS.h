@@ -17,8 +17,8 @@
 * along with Sodaq_UBlox_GPS.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _Sodaq_RN2483_h
-#define _Sodaq_RN2483_h
+#ifndef _SODAQ_UBLOX_GPS_H
+#define _SODAQ_UBLOX_GPS_H
 
 #include <WString.h>
 #include <stdint.h>
@@ -111,4 +111,4 @@ private:
 
 extern Sodaq_UBlox_GPS sodaq_gps;
 
-#endif // Sodaq_RN2483
+#endif // _SODAQ_UBLOX_GPS_H
