@@ -1,4 +1,4 @@
-# Sodaq_ublox_gps
+# Sodaq_UBlox_GPS
 
 Arduino library for using the UBlox EVA7M.
 
@@ -40,7 +40,7 @@ void loop()
 Method|Description
 ------|------
 **init ()**|Initializes the UBlox, and switches it on.
-**scan ()**|Scans all NMEA messages until lat/long is seen.
+**scan (bool leave_on, uint32_t timeout)**|Scans all NMEA messages until lat/long is seen.
 
 
 ## Contributing
@@ -54,6 +54,7 @@ Method|Description
 ## History
 
 v0.0.1 Pre-Alpha Release
+v0.9.0 Beta Release
 
 ## License
 
