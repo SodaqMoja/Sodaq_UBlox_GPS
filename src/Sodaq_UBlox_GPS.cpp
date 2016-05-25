@@ -47,6 +47,8 @@ static inline bool is_timedout(uint32_t from, uint32_t nr_ms)
 
 Sodaq_UBlox_GPS::Sodaq_UBlox_GPS()
 {
+    _enablePin = -1;
+
     _diagStream = 0;
     _addr = UBlox_I2C_addr;
 
@@ -76,11 +78,12 @@ void Sodaq_UBlox_GPS::resetValues()
     _dd = 0;
 }
 
-void Sodaq_UBlox_GPS::init()
+void Sodaq_UBlox_GPS::init(int8_t enable_pin)
 {
+    _enablePin = enable_pin;
     Wire.begin();
-    digitalWrite(GPS_ENABLE, GPS_ENABLE_OFF);
-    pinMode(GPS_ENABLE, OUTPUT);
+    digitalWrite(_enablePin, GPS_ENABLE_OFF);
+    pinMode(_enablePin, OUTPUT);
 }
 
 /*!
@@ -596,10 +599,10 @@ void Sodaq_UBlox_GPS::endTransmission()
 
 void Sodaq_UBlox_GPS::on()
 {
-    digitalWrite(GPS_ENABLE, GPS_ENABLE_ON);
+    digitalWrite(_enablePin, GPS_ENABLE_ON);
 }
 
 void Sodaq_UBlox_GPS::off()
 {
-    digitalWrite(GPS_ENABLE, GPS_ENABLE_OFF);
+    digitalWrite(_enablePin, GPS_ENABLE_OFF);
 }

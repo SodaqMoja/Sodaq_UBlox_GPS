@@ -28,7 +28,7 @@ class Sodaq_UBlox_GPS
 public:
     Sodaq_UBlox_GPS();
 
-    void init();
+    void init(int8_t enable_pin);
     bool scan(bool leave_on=false, uint32_t timeout=20000);
     String getDateTimeString();
     double getLat() { return _lat; }
@@ -78,6 +78,8 @@ private:
     void endTransmission();
 
     void resetValues();
+
+    int8_t      _enablePin;
 
     // The (optional) stream to show debug information.
     Stream *    _diagStream;
