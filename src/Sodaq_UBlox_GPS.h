@@ -33,6 +33,8 @@ public:
     String getDateTimeString();
     double getLat() { return _lat; }
     double getLon() { return _lon; }
+    double getAlt() { return _alt; }
+    double getHDOP() { return _hdop; }
     uint8_t getNumberOfSatellites() { return _numSatellites; }
     uint16_t getYear() { return (uint16_t)_yy + 2000; }         // 2016..
     uint8_t getMonth() { return _MM; }         // 1..
@@ -92,9 +94,12 @@ private:
     size_t      _minNumSatellites;
 
     bool        _seenLatLon;
+    bool        _seenAlt;
     uint8_t     _numSatellites;
     double      _lat;
     double      _lon;
+    double      _alt;
+    double      _hdop;
 
     bool        _seenTime;
     uint8_t     _yy;
