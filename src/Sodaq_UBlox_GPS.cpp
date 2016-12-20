@@ -286,7 +286,7 @@ bool Sodaq_UBlox_GPS::parseGPRMC(const String & line)
             _lat = -_lat;
         }
         _lon = convertDegMinToDecDeg(getField(line, 5));
-        if (getField(line, 4) == "W") {
+        if (getField(line, 6) == "W") {
             _lon = -_lon;
         }
         _seenLatLon = true;
