@@ -24,7 +24,7 @@ void setup()
 
     MySerial.println("SODAQ LoRaONE test_gps is starting ...");
 
-    sodaq_gps.init();
+    sodaq_gps.init(GPS_ENABLE);
     sodaq_gps.setDiag(MySerial);
 }
 
@@ -39,7 +39,7 @@ void loop()
 
 Method|Description
 ------|------
-**init ()**|Initializes the UBlox, and switches it on.
+**init (int8_t enable_pin)**|Initializes the UBlox, and switches it on.
 **scan (bool leave_on, uint32_t timeout)**|Scans all NMEA messages until lat/long is seen.  It returns true when a fix is found.
 
 
