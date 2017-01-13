@@ -53,8 +53,10 @@ Method|Description
 
 ## History
 
-* v0.0.1 Pre-Alpha Release
-* v0.9.0 Beta Release
+Version|Description
+------|------
+v0.0.1|Pre-Alpha Release
+v0.9.0|Beta Release
 
 ## License
 
