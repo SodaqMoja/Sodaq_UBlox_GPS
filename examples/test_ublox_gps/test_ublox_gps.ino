@@ -54,7 +54,7 @@ void setup()
 
     MySerial.println("SODAQ LoRaONE test_gps is starting ...");
 
-    sodaq_gps.init();
+    sodaq_gps.init(GPS_ENABLE);
 
     // This is for debugging to see more details, more messages
     // Use this in combination with setDiag()
