@@ -65,6 +65,7 @@ Sodaq_UBlox_GPS::Sodaq_UBlox_GPS()
 void Sodaq_UBlox_GPS::resetValues()
 {
     _seenLatLon = false;
+    _seenAlt = false;
     _numSatellites = 0;
     _lat = 0;
     _lon = 0;
@@ -110,6 +111,7 @@ bool Sodaq_UBlox_GPS::scan(bool leave_on, uint32_t timeout)
         // Which conditions are required to quit the scan?
         if (_seenLatLon
                 && _seenTime
+                && _seenAlt
                 && (_minNumSatellites == 0 || _numSatellites >= _minNumSatellites)) {
             ++fix_count;
             if (fix_count >= _minNumOfLines) {
@@ -230,6 +232,12 @@ bool Sodaq_UBlox_GPS::parseGPGGA(const String & line)
             _lon = -_lon;
         }
         _seenLatLon = true;
+        
+        _hdop = getField(line, 8).toFloat();
+        if(getField(line, 10) == "M") {
+          _alt = getField(line, 9).toFloat();
+          _seenAlt = true;
+        }
     }
 
     _numSatellites = getField(line, 7).toInt();
