@@ -40,7 +40,7 @@ void loop()
 Method|Description
 ------|------
 **init (int8_t enable_pin)**|Initializes the UBlox, and switches it on.
-**scan (bool leave_on, uint32_t timeout)**|Scans all NMEA messages until lat/long is seen.  It returns true when a fix is found.
+**scan (bool leave_on=false, uint32_t timeout=20000)**|Scans all NMEA messages until lat/long is seen.  It returns true when a fix is found.
 
 
 ## Contributing
