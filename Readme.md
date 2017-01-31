@@ -30,8 +30,20 @@ void setup()
 
 void loop()
 {
-    sodaq_gps.scan();
     MySerial.println("waiting in loop() ...");
+    // Try to get a GPS scan and when we get a fix we print our location. We are
+    // passing true to keep the GPS enabled after a scan
+    if (sodaq_gps.scan(true))
+    {
+      MySerial.print("We are at latitude ");
+      MySerial.print(sodaq_gps.getLat(), 13);
+      MySerial.print(" longitude ");
+      MySerial.print(sodaq_gps.getLon(), 13);
+      MySerial.print(" altitude ");
+      MySerial.print(sodaq_gps.getAlt(), 1);
+      MySerial.print(" and HDOP ");
+      MySerial.println(sodaq_gps.getHDOP(), 2);
+    }
     delay(60000);
 }
 
