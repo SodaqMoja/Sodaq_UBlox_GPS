@@ -51,13 +51,6 @@ Method|Description
 4. Push to the branch: `git push origin my-new-feature`
 5. Submit a pull request
 
-## History
-
-Version|Description
-------|------
-v0.0.1|Pre-Alpha Release
-v0.9.0|Beta Release
-
 ## License
 
 Copyright (c) 2016 SODAQ. All rights reserved.
