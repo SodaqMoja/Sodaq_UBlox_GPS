@@ -17,7 +17,7 @@ env:
 install:
     - pip install -U platformio
     - pio update
-    - platformio lib install Wire
+#    - platformio lib install Wire
 
 script:
     - platformio ci --lib="./src" $PLATFORMIO_CI_EXTRA_ARGS
