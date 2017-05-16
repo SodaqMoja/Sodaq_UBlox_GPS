@@ -34,6 +34,7 @@ public:
     double getLat() { return _lat; }
     double getLon() { return _lon; }
     double getAlt() { return _alt; }
+    double getSpeed() { return _speed; }
     double getHDOP() { return _hdop; }
     uint8_t getNumberOfSatellites() { return _numSatellites; }
     uint16_t getYear() { return (uint16_t)_yy + 2000; }         // 2016..
@@ -97,6 +98,7 @@ private:
     bool        _seenAlt;
     uint8_t     _numSatellites;
     double      _lat;
+    double      _speed;
     double      _lon;
     double      _alt;
     double      _hdop;
