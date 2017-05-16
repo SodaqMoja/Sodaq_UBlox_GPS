@@ -30,8 +30,20 @@ void setup()
 
 void loop()
 {
-    sodaq_gps.scan();
     MySerial.println("waiting in loop() ...");
+    // Try to get a GPS scan and when we get a fix we print our location. We are
+    // passing true to keep the GPS enabled after a scan
+    if (sodaq_gps.scan(true))
+    {
+      MySerial.print("We are at latitude ");
+      MySerial.print(sodaq_gps.getLat(), 13);
+      MySerial.print(" longitude ");
+      MySerial.print(sodaq_gps.getLon(), 13);
+      MySerial.print(" altitude ");
+      MySerial.print(sodaq_gps.getAlt(), 1);
+      MySerial.print(" and HDOP ");
+      MySerial.println(sodaq_gps.getHDOP(), 2);
+    }
     delay(60000);
 }
 
@@ -50,13 +62,6 @@ Method|Description
 3. Commit your changes: `git commit -am 'Add some feature'`
 4. Push to the branch: `git push origin my-new-feature`
 5. Submit a pull request
-
-## History
-
-Version|Description
-------|------
-v0.0.1|Pre-Alpha Release
-v0.9.0|Beta Release
 
 ## License
 
