@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Wire.h>
 #include <Sodaq_UBlox_GPS.h>
 
 #define MySerial        SERIAL_PORT_MONITOR
