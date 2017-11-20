@@ -29,7 +29,7 @@ public:
     Sodaq_UBlox_GPS();
 
     void init(int8_t enable_pin);
-    bool scan(bool leave_on=false, uint32_t timeout=20000);
+    bool scan(bool leave_on = false, uint32_t timeout = 20000);
     String getDateTimeString();
     double getLat() { return _lat; }
     double getLon() { return _lon; }
@@ -69,7 +69,7 @@ private:
     bool parseGPGLL(const String & line);
     bool parseGPVTG(const String & line);
     bool parseGPTXT(const String & line);
-    bool computeCrc(const char * line, bool do_logging=false);
+    bool computeCrc(const char * line, bool do_logging = false);
     uint8_t getHex2(const char * s, size_t index);
     String num2String(int num, size_t width);
     String getField(const String & data, int index);

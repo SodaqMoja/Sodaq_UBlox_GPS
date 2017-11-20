@@ -110,9 +110,9 @@ bool Sodaq_UBlox_GPS::scan(bool leave_on, uint32_t timeout)
 
         // Which conditions are required to quit the scan?
         if (_seenLatLon
-                && _seenTime
-                && _seenAlt
-                && (_minNumSatellites == 0 || _numSatellites >= _minNumSatellites)) {
+            && _seenTime
+            && _seenAlt
+            && (_minNumSatellites == 0 || _numSatellites >= _minNumSatellites)) {
             ++fix_count;
             if (fix_count >= _minNumOfLines) {
                 retval = true;
@@ -141,11 +141,11 @@ bool Sodaq_UBlox_GPS::scan(bool leave_on, uint32_t timeout)
 String Sodaq_UBlox_GPS::getDateTimeString()
 {
     return num2String(getYear(), 4)
-            + num2String(getMonth(), 2)
-            + num2String(getDay(), 2)
-            + num2String(getHour(), 2)
-            + num2String(getMinute(), 2)
-            + num2String(getSecond(), 2);
+        + num2String(getMonth(), 2)
+        + num2String(getDay(), 2)
+        + num2String(getHour(), 2)
+        + num2String(getMinute(), 2)
+        + num2String(getSecond(), 2);
 }
 
 bool Sodaq_UBlox_GPS::parseLine(const char * line)
@@ -159,15 +159,15 @@ bool Sodaq_UBlox_GPS::parseLine(const char * line)
     String data = line + 1;
     data.remove(data.length() - 3, 3);  // Strip checksum *<hex><hex>
 
-    if (data.startsWith("GPGGA")) {
+    if (data.startsWith("GPGGA") || data.startsWith("GNGGA")) {
         return parseGPGGA(data);
     }
 
-    if (data.startsWith("GPGSA")) {
+    if (data.startsWith("GPGSA") || data.startsWith("GNGSA")) {
         return parseGPGSA(data);
     }
 
-    if (data.startsWith("GPRMC")) {
+    if (data.startsWith("GPRMC") || data.startsWith("GNRMC")) {
         return parseGPRMC(data);
     }
 
@@ -175,15 +175,15 @@ bool Sodaq_UBlox_GPS::parseLine(const char * line)
         return parseGPGSV(data);
     }
 
-    if (data.startsWith("GPGLL")) {
+    if (data.startsWith("GPGLL") || data.startsWith("GNGLL")) {
         return parseGPGLL(data);
     }
 
-    if (data.startsWith("GPVTG")) {
+    if (data.startsWith("GPVTG") || data.startsWith("GNVTG")) {
         return parseGPVTG(data);
     }
 
-    if (data.startsWith("GPTXT")) {
+    if (data.startsWith("GPTXT") || data.startsWith("$GPTXT")) {
         return parseGPTXT(data);
     }
 
@@ -234,9 +234,9 @@ bool Sodaq_UBlox_GPS::parseGPGGA(const String & line)
         _seenLatLon = true;
 
         _hdop = getField(line, 8).toFloat();
-        if(getField(line, 10) == "M") {
-          _alt = getField(line, 9).toFloat();
-          _seenAlt = true;
+        if (getField(line, 10) == "M") {
+            _alt = getField(line, 9).toFloat();
+            _seenAlt = true;
         }
     }
 
@@ -294,8 +294,8 @@ bool Sodaq_UBlox_GPS::parseGPRMC(const String & line)
 
     String time = getField(line, 1);
     String date = getField(line, 9);
-    String speed = getField(line, 7);
 
+    String speed = getField(line, 7);
     _speed = speed.toDouble();
 
     setDateTime(date, time);
@@ -436,18 +436,22 @@ uint8_t Sodaq_UBlox_GPS::getHex2(const char * s, size_t index)
     c = s[index];
     if (c >= '0' && c <= '9') {
         val += c - '0';
-    } else if (c >= 'a' && c <= 'f') {
+    }
+    else if (c >= 'a' && c <= 'f') {
         val += c - 'a' + 10;
-    } else if (c >= 'A' && c <= 'F') {
+    }
+    else if (c >= 'A' && c <= 'F') {
         val += c - 'A' + 10;
     }
     val <<= 4;
     c = s[++index];
     if (c >= '0' && c <= '9') {
         val += c - '0';
-    } else if (c >= 'a' && c <= 'f') {
+    }
+    else if (c >= 'a' && c <= 'f') {
         val += c - 'a' + 10;
-    } else if (c >= 'A' && c <= 'F') {
+    }
+    else if (c >= 'A' && c <= 'F') {
         val += c - 'A' + 10;
     }
     return val;
@@ -506,10 +510,10 @@ double Sodaq_UBlox_GPS::convertDegMinToDecDeg(const String & data)
     double decDeg = 0.0;
 
     //get the minutes, fmod() requires double
-    min = fmod((double) degMin, 100.0);
+    min = fmod((double)degMin, 100.0);
 
     //rebuild coordinates in decimal degrees
-    degMin = (int) (degMin / 100);
+    degMin = (int)(degMin / 100);
     decDeg = degMin + (min / 60);
 
     return decDeg;
