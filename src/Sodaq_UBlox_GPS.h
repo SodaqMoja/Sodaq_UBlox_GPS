@@ -22,6 +22,7 @@
 
 #include <WString.h>
 #include <stdint.h>
+#include <Stream.h>
 
 class Sodaq_UBlox_GPS
 {
