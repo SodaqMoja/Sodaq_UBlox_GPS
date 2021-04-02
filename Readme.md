@@ -2,6 +2,8 @@
 
 Arduino library for using the UBlox EVA7M.
 
+[![CI](https://github.com/SodaqMoja/Sodaq_UBlox_GPS/workflows/CI/badge.svg)](https://github.com/SodaqMoja/Sodaq_UBlox_GPS/actions?query=workflow%3ACI)
+
 ## Usage
 
 Quick example:
